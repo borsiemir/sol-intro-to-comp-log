@@ -726,19 +726,23 @@ Unset Printing All.
    Toggle View -> Display all low-level contents instead! *)
 (* Unset Printing All. *)
 
+(* Comentado ya que ya esta definido
 Fixpoint length (X : Type) (A : list X) : nat :=
   match A with
     | nil     => O
     | _ :: A' => S (length A')
   end.
+*)
 
 Notation "| A |" := (length A) (at level 70).
 
+(* Comentado ya que ya esta definido
 Fixpoint app (X : Type) (A B : list X) : list X :=
   match A with
     | nil     => B
     | x :: A' => x :: app A' B
   end.
+ *)
 
 Notation "x ++ y" := (app x y) (at level 60, right associativity).
 
@@ -747,6 +751,7 @@ Fixpoint rev (X : Type) (A : list X) : list X :=
     | nil     => nil
     | x :: A' => rev A' ++ [x]
   end.
+
 
 Compute rev [1;2;3].
 (* = [3; 2; 1] : list nat *)
@@ -767,15 +772,16 @@ Require Import List.
 Import ListNotations.
 *)
 
-(* Exercise 1.10.1 *) (* Hay problemas al aplicar simpl *)
+(* Exercise 1.10.1 *)
 
 (* Needed for section 1.11 *)
 Lemma app_assoc (X : Type) (A B C : list X) :
   (A ++ B) ++ C = A ++ (B ++ C).
 Proof.
-  induction A as [|x A].
-  - simpl. (* reflexivity. *)
-    Admitted. (* Surge problema al intentar demostrar que B ++ C = (B ++ C)%list, error? *)
+  induction A as [|x A]; simpl.
+  - reflexivity. 
+  - f_equal. apply IHA.
+Qed.
   
 Lemma length_app (X : Type) (A B : list X) :
   |A ++ B| = |A| + |B|.
@@ -787,11 +793,19 @@ Qed.
 
 Lemma rev_app (X : Type) (A B : list X) :
   rev (A ++ B) = rev B ++ rev A.
-Abort. (* No se consigue por problema anterior *)
+Proof.
+  induction A as [|x A]; simpl.
+  - symmetry. apply app_nil.
+  - rewrite IHA. apply app_assoc.
+Qed.
     
 Lemma rev_rev (X : Type) (A : list X) :
   rev (rev A) = A.
-Abort. (* A esperar a resolver problemas con listas *)
+Proof.
+  induction A as [|x A]; simpl.
+  - reflexivity.
+  - rewrite rev_app. simpl. f_equal. apply IHA.
+Qed.
 
 (** * 1.11 Quantified Inductive Hypotheses *)
 
@@ -814,9 +828,11 @@ Qed.
 Lemma rev_revi (X : Type) (A : list X) :
   rev A = revi A nil.
 Proof.
-  induction A as [|x A].
+  induction A as [|x A]; simpl.
   - reflexivity.
-  - simpl. Admitted. (* Otra vez el problema con listas *)
+  - symmetry. apply revi_rev.
+Qed.
+
 (* Exercise 1.11.2 *)
 
 Fixpoint lengthi (X : Type) (A : list X) (n : nat) :=
@@ -827,13 +843,19 @@ Fixpoint lengthi (X : Type) (A : list X) (n : nat) :=
 
 Lemma lengthi_length X (A : list X) n :
   lengthi A n = |A| + n.
-Abort.
+Proof.
+  revert n; induction A as [|x A]; simpl.
+  - reflexivity.
+  - intro n. rewrite IHA. simpl. apply plus_S.
+Qed.  
 
 Lemma length_lengthi X (A : list X) :
   |A| = lengthi A 0.
-Abort.
+Proof.
+  symmetry. rewrite <- plus_O. apply lengthi_length.
+Qed.
 
-(* Exercise 1.11.3 *) (* RESOLVER *)
+(* Exercise 1.11.3 *)
 
 (* Fixpoint fact (n : nat) : nat :=
 (* ... *)
@@ -842,6 +864,40 @@ Fixpoint facti (n a: nat) : nat :=
 (* ... *)
 
 Goal forall n, fact n = facti n 1. *)
+
+(* fact ya esta definido *)
+
+Compute fact 5. 
+
+Fixpoint facti (n a: nat) : nat :=
+  match n with
+    | O => a
+    | S n' => facti n' (a * S n')
+end.
+
+Lemma mult_1 (n :nat) :
+  1 * n = n.
+Proof.
+  destruct n; simpl.
+  - reflexivity.
+  - f_equal. apply plus_O.
+Qed.
+
+Lemma mult_plus (n m:nat) :
+  m + n * m = S n * m.
+Proof.
+  destruct m; simpl; f_equal; reflexivity.
+Qed.
+   
+Lemma facti_fact (n m:nat) :
+  facti n m  = m * fact n.
+Proof.
+  revert m; induction n; simpl.
+  - intro m. rewrite mult_com. symmetry. apply mult_1.
+  - intro m. setoid_rewrite mult_com at 2. rewrite mult_dist. rewrite IHn.
+    rewrite mult_com. rewrite  mult_assoc. rewrite mult_S. rewrite plus_com.
+    f_equal. rewrite mult_com. rewrite mult_assoc. reflexivity.
+Qed.
 
 (** * 1.12 Iteration as Polymorphic Higher-Order Function *)
 
@@ -880,7 +936,7 @@ Qed.
 (* Exercise 1.12.3 *)
 
 (* Fixpoint power (x n: nat) := 
-(* ... *) Definido antes.
+(* ... *) Definido atras.
 
 Lemma iter_power x n:
   power x n = iter n (mult x) 1. *)
@@ -951,7 +1007,7 @@ Inductive option (X : Type) : Type :=
 | Some : X -> option X
 | None : option X.
 
-Arguments None {X}. (* Añadido para que None tenga argumento implícito *)
+Arguments None {X}.
 
 Definition fin (n : nat) : Type :=
   Nat.iter n option Empty_set.
