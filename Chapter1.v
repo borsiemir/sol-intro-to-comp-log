@@ -775,7 +775,7 @@ Lemma app_assoc (X : Type) (A B C : list X) :
 Proof.
   induction A as [|x A].
   - simpl. (* reflexivity. *)
-    Admitted. (* Que sucede aqui *)
+    Admitted. (* Surge problema al intentar demostrar que B ++ C = (B ++ C)%list, error? *)
   
 Lemma length_app (X : Type) (A B : list X) :
   |A ++ B| = |A| + |B|.
@@ -787,11 +787,11 @@ Qed.
 
 Lemma rev_app (X : Type) (A B : list X) :
   rev (A ++ B) = rev B ++ rev A.
-Abort. (* No puedo por motivo del anterior *)
+Abort. (* No se consigue por problema anterior *)
     
 Lemma rev_rev (X : Type) (A : list X) :
   rev (rev A) = A.
-Abort. (* A espera de resolver problemas con listas *)
+Abort. (* A esperar a resolver problemas con listas *)
 
 (** * 1.11 Quantified Inductive Hypotheses *)
 
@@ -816,7 +816,7 @@ Lemma rev_revi (X : Type) (A : list X) :
 Proof.
   induction A as [|x A].
   - reflexivity.
-  - simpl. Admitted. (* Otra vez el tema de  % *)
+  - simpl. Admitted. (* Otra vez el problema con listas *)
 (* Exercise 1.11.2 *)
 
 Fixpoint lengthi (X : Type) (A : list X) (n : nat) :=
@@ -833,7 +833,7 @@ Lemma length_lengthi X (A : list X) :
   |A| = lengthi A 0.
 Abort.
 
-(* Exercise 1.11.3 *)
+(* Exercise 1.11.3 *) (* RESOLVER *)
 
 (* Fixpoint fact (n : nat) : nat :=
 (* ... *)
@@ -880,7 +880,7 @@ Qed.
 (* Exercise 1.12.3 *)
 
 (* Fixpoint power (x n: nat) := 
-(* ... *) Definido atras.
+(* ... *) Definido antes.
 
 Lemma iter_power x n:
   power x n = iter n (mult x) 1. *)
@@ -951,7 +951,7 @@ Inductive option (X : Type) : Type :=
 | Some : X -> option X
 | None : option X.
 
-Arguments None {X}.
+Arguments None {X}. (* Añadido para que None tenga argumento implícito *)
 
 Definition fin (n : nat) : Type :=
   Nat.iter n option Empty_set.
