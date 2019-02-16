@@ -567,9 +567,28 @@ Proof.
   intros X Y. intros x H. apply H. exists x. reflexivity.
 Qed.
 
-(* Falta apartado b *)
+(* Apartado b *)
 
-(* Falta ejercicio 2.12.1 *)
+(* Vamos a exponer de forma general la correspondencia con una tabla, sin entrar
+en los detalles:
+
+
+--------------------------------------|-----------------------------------------
+  intro s                             |  apply s -> t
+--------------------------------------|-----------------------------------------
+  intro x                             |  apply (forall x : s, t)
+--------------------------------------|-----------------------------------------
+                                      |  exfalso
+--------------------------------------|-----------------------------------------
+  split                               |  destruct (s /\ t)
+--------------------------------------|-----------------------------------------
+  left            |  right            |  destruct (s \/ t)
+--------------------------------------|-----------------------------------------
+  exists u                            |  destruct (exists x : s, t) as [x t]
+--------------------------------------|-----------------------------------------
+ *)
+  
+(* Exercise 2.12.1 *)
 
 (** * 2.13 Proof Rules as Lemmas *)
 
@@ -650,7 +669,7 @@ Qed.
 Inductive True : Prop :=
   | I : True.
 
-Inductive False : Prop := .
+(* Inductive False : Prop := . *)
 
 Goal forall x y : True, x=y.
 Proof. intros x y. destruct x. destruct y. reflexivity. Qed.
@@ -686,8 +705,131 @@ Proof.
     + exact (or_introl x).
 Qed.
 
-(* Faltan ejercicios 2.14.2, 2.14.3 *)
+(* Falta ejercicio 2.14.2 *)
 
+(* Exercise 2.14.2 *)
+
+Inductive MyAnd (X Y : Prop) : Prop :=
+  | myAnd : X -> Y -> MyAnd X Y.
+
+Inductive MyOr (X Y : Prop) : Prop :=
+  | myOrl : X -> MyOr X Y
+  | myOrr : Y -> MyOr X Y.                    
+
+Inductive MyTrue : Prop :=
+  | myTrue : MyTrue.
+
+Inductive MyFalse : Prop := .
+
+Inductive MyEx (X : Type) (p : X -> Prop) : Prop :=
+  | myEx : forall (x : X), p x -> MyEx p. 
+
+Inductive MyImpl (X Y : Prop) : Prop :=
+  | myImpl : (X -> Y) -> MyImpl X Y.
+
+Inductive MyForAll (X : Type) (p : X -> Prop) : Prop :=
+  | myForAll : (forall x : X, p x) -> MyForAll p.
+
+Definition MyNo (X : Prop) : Prop :=
+  MyImpl X MyFalse. 
+  
+Definition MyIff (X Y : Prop) : Prop :=
+  MyAnd (MyImpl X Y) (MyImpl Y X).
+
+Goal forall X Y : Prop, X /\ Y <-> MyAnd X Y.
+Proof.
+  intros X Y; split.
+  - intros [x y]. exact (myAnd x y).
+  - intro xy. destruct xy. split; assumption.
+Qed.
+
+Goal forall X Y : Prop, X \/ Y <-> MyOr X Y.
+Proof.
+  intros X Y; split.
+  - intro H. destruct H as [x | y].
+    + exact (myOrl Y x).
+    + exact (myOrr X y). 
+  - intro H. destruct H.
+    + left; assumption.
+    + right; assumption.
+Qed.
+
+Goal True <-> MyTrue.
+Proof.
+   split.
+  - intro T. exact (myTrue).
+  - reflexivity.
+Qed.
+
+Goal False <-> MyFalse.
+Proof.
+  split.
+  - intro F. contradiction F.
+  - intro F. contradiction F.
+Qed.
+
+Goal forall (X : Type) (p : X -> Prop),
+    (exists x : X, p x) <-> (MyEx (fun x : X => p x)).
+Proof.
+  intros X p; split.
+  - intros [x px]. exact (myEx px).
+  - intros H. destruct H. exists x. assumption.
+Qed.
+
+Goal forall (X Y : Prop), (MyImpl X Y) <-> (X -> Y).
+Proof.
+  intros X Y; split.
+  - intros H x. destruct H as [xy]. exact (xy x).
+  - intro xy. exact (myImpl xy).
+Qed.
+
+Goal forall (X : Type) (p : X -> Prop),
+    (forall x : X, p x) <-> (MyForAll (fun x => p x)).
+Proof.
+  intros X p; split.
+  - intro H. exact (myForAll H).
+  - intro H. destruct H. assumption.
+Qed.
+
+Goal forall X : Prop, ~ X <-> MyNo X.
+Proof.
+  intro X; split.
+  - setoid_rewrite Unnamed_thm84. setoid_rewrite <- Unnamed_thm82. auto.
+  - unfold MyNo. setoid_rewrite Unnamed_thm84. setoid_rewrite <- Unnamed_thm82. auto.
+Qed.
+
+Goal forall X Y : Prop, (X <-> Y) <-> (MyIff X Y).
+Proof.
+  intros X Y; split.
+  - unfold MyIff. intro H. setoid_rewrite <- Unnamed_thm79.
+    setoid_rewrite Unnamed_thm84. auto.
+  - unfold MyIff. setoid_rewrite <- Unnamed_thm79.
+    setoid_rewrite Unnamed_thm84. auto. 
+Qed.  
+
+(* Exercise 2.14.3 *)
+
+Lemma NoI (Y : Prop) :
+  (forall X : Prop, (Y -> X)) -> ~ Y.
+Proof.
+  intros H y. specialize (H False). exact (H y).
+Qed.
+
+Lemma NoE (X Y : Prop) :
+  ~ Y -> Y -> X.
+Proof.
+  intros ny y. exfalso. exact (ny y).
+Qed.
+
+Inductive neg (X : Prop) : Prop :=
+  negI : (forall Y : Prop, X -> Y) -> neg X.
+
+Lemma negE (X Y : Prop) :
+  neg Y -> Y -> X.
+Proof.
+  intros negy y. apply negy. exact y.
+Qed.
+  
 (** * 2.15 An Observation *)
 
 Definition AND (X Y : Prop) : Prop :=
@@ -709,6 +851,64 @@ Proof.
   - intros [x y] Z A. apply A ; assumption.
 Qed.
 
+(* Exercise 2.15.1 *)
+
+Definition OR (X Y : Prop) : Prop :=
+  forall Z : Prop, (X -> Z) -> (Y -> Z) -> Z.
+
+Lemma ORIL (X Y : Prop) :
+  X -> OR X Y.
+Proof.
+  intro x. intros Z xz yz. exact (xz x).
+Qed.
+
+Lemma ORIR (X Y : Prop) :
+  Y -> OR X Y.
+Proof.
+  intro y. intros Z xz yz. exact (yz y).
+Qed.
+
+Lemma ORE (X Y Z : Prop):
+  (OR X Y) -> (X -> Z) -> (Y -> Z) -> Z.
+Proof.
+  intro H. apply H.
+Qed.
+
+Lemma OR_agree (X Y : Prop) :
+  OR X Y <-> X \/ Y.
+Proof.
+  split.
+  - intro H. apply H.
+    + intro x. left; assumption.
+    + intro y. right; assumption.
+  - intros H Z xz yz. destruct H as [x | y].
+    + exact (xz x).
+    + exact (yz y).
+Qed.
+
+Definition EX (X : Type) (p : X -> Prop) : Prop :=
+  forall Z : Prop, (forall x, p x -> Z) -> Z.
+
+Lemma EXI (X : Type) (p : X -> Prop) :
+  forall x : X, p x -> EX p.
+Proof.
+  intros x px Z H. revert px. apply H.
+Qed.
+  
+Lemma EXE (X : Type) (p : X -> Prop) (Z : Prop) :
+  EX p -> (forall x : X, p x -> Z) -> Z. 
+Proof.
+  unfold EX. intros Ex H. apply Ex. assumption.
+Qed.
+
+Lemma EX_agree (X : Type) (p : X -> Prop) :
+  EX p <-> (exists x : X, p x).
+Proof.
+  split.
+  - unfold EX. intro ex. apply ex. intros x px. exists x; assumption.
+  - intros [x px] Z H. revert px. apply H.
+Qed.
+
 (** * 2.16 Excluded Middle *)
 
 Definition XM : Prop := forall X : Prop, X \/ ~ X.
@@ -717,12 +917,27 @@ Definition XM : Prop := forall X : Prop, X \/ ~ X.
 
 Goal forall X Y : Prop,
        XM -> ~ (X /\ Y) -> ~ X \/ ~ Y.
-Abort.
+Proof.
+  unfold XM; intros X Y XM H. specialize (XM X). destruct XM as [x | nx].
+  - right. intro y. apply H. split. exact x. exact y.
+  - left. exact nx.
+Qed.
 
 Goal forall (X : Type) (p : X -> Prop),
 XM -> ~ (forall x, p x) -> exists x, ~ p x.
-Abort.
-
+Proof.
+  unfold XM; intros X p XM H.
+  assert ((exists x, ~ p x) \/ ~ (exists x, ~ p x)).
+  { specialize (XM (exists x, ~ p x)). assumption. }
+  destruct H0.
+  - assumption.
+  - exfalso. apply H. intro x. specialize (XM (p x)).
+    destruct XM as [px | npx].
+    + assumption.
+    +  exfalso. apply H0. exists x. assumption.
+Qed. (* He necesitado usar assert que todavia no ha sido explicado 
+para usar XM dos veces, no se me ocurre como hacerlo aplicandolo solo una vez *)
+  
 (* Exercise 2.16.2 *)
 
 Definition DN : Prop := forall X : Prop, ~~ X -> X. (* double negation *)
@@ -730,53 +945,123 @@ Definition CP : Prop := forall X Y : Prop, (~ Y -> ~ X) -> X -> Y. (* contraposi
 Definition Peirce : Prop := forall X Y : Prop, ((X -> Y) -> X) -> X. (* Peirce's Law *)
 
 Goal XM -> DN.
-Abort.
+Proof.
+  unfold XM; unfold DN. intros XM X nnx. specialize (XM X).
+  destruct XM as [x | nx].
+  - exact x.
+  - exfalso. exact (nnx nx).
+Qed.
 
 Goal DN -> CP.
-Abort.
+Proof.
+  unfold DN; unfold CP. intros DN X Y nynx x. apply DN. intro ny.
+  exact (nynx ny x).
+Qed.
 
 Goal CP -> Peirce.
-Abort.
+Proof.
+  unfold CP; unfold Peirce. intros CP X Y. apply CP.
+  intro nx. intro H. apply nx. apply H. apply CP. intro ny. exact nx.
+Qed.
+
+Goal Peirce -> XM.
+Proof.
+  unfold Peirce; unfold XM. intros Peirce X. specialize (Peirce (X \/ ~ X)).
+  specialize (Peirce False). apply Peirce.
+  intro H. right. intro x. apply H. left. exact x.
+Qed.
+  
+
 
 (* Exercise 2.16.3 *)
 
 Lemma drinker (X : Type) (d : X -> Prop) :
 XM -> (exists x : X, True) -> exists x, d x -> forall x, d x.
-Abort.
-
+Proof.
+  unfold XM; intros XM [x _].
+  assert ((exists x : X, ~ d x) \/ ~ (exists x : X, ~ d x)).
+  {specialize (XM (exists x : X, ~ d x)). assumption. }
+  destruct H as [[y ndy]| nex].
+  - exists y. intro dy. exfalso. exact (ndy dy).
+  - exists x. intro dx. intro y. specialize (XM (d y)).
+    destruct XM as [dy | ndy].
+    + assumption.
+    + exfalso. apply nex. exists y. assumption.
+Qed. (* Igual que con el 2.16.1 no se me ocurre solucion sin usar dos veces XM *)
+    
 (* Exercise 2.16.4 *)
 
 Goal forall X : Prop,
 ~~ (X \/ ~ X).
-Abort.
-
+Proof.
+  intros X H. apply H. right. intro x. apply H. left. exact x.
+Qed.
+  
 Goal forall X Y : Prop,
 ~~ (((X -> Y) -> X) -> X).
-Abort.
+Proof.
+  intros X Y H. apply H. intro H1. apply H1. intro x. exfalso. apply H. intro H1'.
+  exact x.
+Qed.
 
 Goal forall X Y : Prop,
 ~~ (~ (X /\ Y) <-> ~ X \/ ~ Y).
-Abort.
+Proof.
+  intros X Y H. apply H. split.
+  - intro H1. left. intro x. apply H. split.
+    + intro H1'. right. intro y. apply H1. split.
+      * exact x.
+      * exact y.      
+    + intro H2. exact H1.
+  -   intro H1. intros [x y]. destruct H1 as [nx | ny].
+      + exact (nx x).
+      + exact (ny y).
+
+Qed.
 
 Goal forall X Y : Prop,
 ~~ ((X -> Y) <-> (~ Y -> ~ X)).
-Abort.
+Proof.
+  intros X Y H. apply H. split.
+  - intros xy ny x. apply ny. exact (xy x).
+  - intros nynx. intro x. exfalso. apply nynx.
+    + intro y. apply H. split.
+      * intro H1; exact nynx.
+      * intros H1 x'; exact y.
+    + exact x.
+Qed.    
+
+(* Pensar porque basta esto para el tercio excluso *)
 
 (* Exercise 2.16.5 *)
 
 Definition pdec (s: Prop) := s \/ ~ s.
 
 Goal pdec (forall X: Prop, ~ (X \/ ~ X)).
-Abort.
-
+Proof.
+  right. intro H. specialize (H False). apply H. right. intro F. exact F.
+Qed.
+  
 Goal pdec (exists X: Prop, ~ (X \/ ~X)).
-Abort.
-
+Proof.
+  right. intros [X H]. apply H. right. intro x. apply H. left. exact x.
+Qed.
+  
 Goal pdec (forall P: Prop, exists f: Prop -> Prop, forall X Y: Prop,
                                  (X /\ P -> Y) <-> (X -> f Y)).
-Abort.
-
+Proof.
+  left. intros P. exists (fun X => P -> X). intros X Y. split.
+  - intros H x p. apply H. split.
+    + exact x.
+    + exact p.
+  -  intros H [x p]. exact (H x p).
+Qed.
+  
 Goal pdec (forall P:Prop, exists f: Prop -> Prop, forall X Y: Prop,
                                 (X -> Y /\ P) <-> (f X -> Y)).
-Abort.
-
+Proof.
+  right. intro H. specialize (H False). destruct H as [f H]. specialize (H True).
+  specialize (H True). apply H.
+  - intro H1. reflexivity.
+  - reflexivity.
+Qed.
