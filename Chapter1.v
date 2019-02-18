@@ -379,7 +379,7 @@ Proof.
   induction x.
   - reflexivity.
   - rewrite plus_S. simpl. f_equal. rewrite plus_asso. rewrite <- IHx. f_equal.
-Qed.  (* Revisar para usar apply directamente sobre hipotesis *)
+Qed.
 
 (* Exercise 1.5.2 *)
 Lemma mult_O (x : nat) :
@@ -490,27 +490,47 @@ Check O + O * S O.
 
 Unset Printing All.
 
-(* Exercise 1.7.1 *) (* Hacer despues copiar y pegar *)
+(* Exercise 1.7.1 *)
 
 Goal forall (x : nat),
   x * O = O.
-Abort.
+Proof.
+  induction x.
+  - reflexivity.
+  - simpl. assumption. Qed.
 
 Goal forall x y: nat,
   x * (S y) = (x * y) + x.
-Abort.
+Proof.
+  induction x.
+  - reflexivity.
+  - intros y. rewrite plus_S. simpl. f_equal. rewrite plus_asso.
+    rewrite <- IHx. f_equal.
+Qed.
 
 Goal forall x y: nat,
   x * y = y * x.
-Abort.
+Proof.
+  induction x.
+  - intro y. simpl; rewrite mult_O. reflexivity.
+  - intro y. simpl. rewrite mult_S. setoid_rewrite plus_com at 2. f_equal. apply IHx.
+Qed.
 
 Goal forall x y z: nat,
   (x + y) * z = (x * z) + (y * z).
-Abort.
+Proof.
+    induction x.
+  - reflexivity.
+  - intros y z. simpl. rewrite plus_asso. f_equal. apply IHx.
+Qed.
 
 Goal forall x y z: nat,
   (x * y) * z = x * (y * z).
-Abort.
+Proof.
+  induction x.
+  - reflexivity.
+  - intros y z. simpl. rewrite <- IHx. rewrite <- mult_dist. f_equal.
+Qed.
 
 (* Exercise 1.7.2 *)
 
