@@ -919,6 +919,11 @@ Proof.
     f_equal. rewrite mult_com. rewrite mult_assoc. reflexivity.
 Qed.
 
+Goal forall n, fact n = facti n 1.
+Proof.
+  intros n. symmetry. rewrite <- mult_1. apply facti_fact.
+Qed.
+
 (** * 1.12 Iteration as Polymorphic Higher-Order Function *)
 
 Fixpoint iter (n : nat) (X : Type) (f : X -> X) (x : X) : X :=
