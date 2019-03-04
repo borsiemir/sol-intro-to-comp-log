@@ -211,15 +211,31 @@ Qed.
 (* Definition lt : nat -> nat -> Prop := *)
 
 Definition lt : nat -> nat -> Prop :=
-  fun x y => leb x y = true.
+  fun x y => leb (S x) y = true.
+
+Lemma lt_tran x y z : lt x y -> lt y (S z) -> lt x z. 
+Proof.
+  revert y z; induction x; intros y z A B.
+  - destruct y, z; try discriminate A; try discriminate B. (* Casos abs por hip *)
+    unfold lt. simpl. reflexivity.
+  - destruct y, z; try discriminate A; try discriminate B. (* Casos abs por hip *)
+    assert (lt x z) as  C. { apply (IHx y).
+                             - unfold lt in A. simpl in A. exact A. 
+                             - unfold lt in B. simpl in B. exact B. }
+    unfold lt. simpl. exact C.
+Qed.
 
 Lemma size_induction_lt X (f : X -> nat) (p : X -> Prop) :
-(forall x, (forall y, lt (f y) (f x) -> p y) -> p x) -> forall x, p x.
+  (forall x, (forall y, lt (f y) (f x) -> p y) -> p x) ->
+  forall x, p x.
 Proof.
   intros step x. apply step.
-  assert (forall n, forall y : X, lt (f y) n -> p y) as gen.
-  { induction n.
-    -  Abort.
+  assert (forall n y, lt (f y) n -> p y) as A.
+  { induction n; intros y A.
+    - unfold lt in A. simpl in A. discriminate A. (* Basta con discriminate A, pero 
+asi se ve mas claro *)
+    - apply step. intros z B. apply IHn. exact (lt_tran B A). }
+  apply A. Qed.
 
 (** * 4.4 Equational Specifcation of Functions *)
 
